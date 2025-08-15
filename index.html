@@ -1,0 +1,497 @@
+<!DOCTYPE html><html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Star Clicker — HTML5</title>
+  <style>
+    :root {
+      --bg1: #ff6b6b;
+      --bg2: #f7d794;
+      --bg3: #1dd1a1;
+      --bg4: #54a0ff;
+      --bg5: #9b59b6;
+      --text: #111;
+      --muted: #555;
+      --panel: rgba(255,255,255,0.65);
+      --glass: rgba(255,255,255,0.35);
+      --shadow: 0 10px 30px rgba(0,0,0,0.15);
+      --radius: 18px;
+      --accent: #ffb400;
+    }* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* Animated rainbow background */
+.bg {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3), var(--bg4), var(--bg5));
+  background-size: 300% 300%;
+  animation: gradient 18s ease infinite;
+  filter: saturate(1.1);
+}
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Frosted glass container */
+.wrap {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  height: 100dvh;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+header.card {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.6);
+  font-weight: 600;
+}
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.main.card { display: grid; grid-template-rows: 1fr auto; padding: 16px; }
+
+.clickzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  overflow: hidden;
+}
+
+.star-btn {
+  width: clamp(160px, 38vmin, 340px);
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff6, #0000), #ffd95e;
+  border: none;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25), inset 0 -8px 16px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform 0.04s ease, filter 0.2s ease;
+  position: relative;
+}
+.star-btn:active { transform: scale(0.97); }
+.star-shape {
+  position: absolute; inset: 0;
+  background: conic-gradient(from 0deg, #fff38a, #ffe166, #ffc949, #ffe166, #fff38a);
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,5 61,38 96,38 67,58 78,92 50,72 22,92 33,58 4,38 39,38"/></svg>') center/70% 70% no-repeat;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,5 61,38 96,38 67,58 78,92 50,72 22,92 33,58 4,38 39,38"/></svg>') center/70% 70% no-repeat;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+}
+
+.floating { position: absolute; pointer-events: none; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+
+.stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
+}
+.stat { background: var(--glass); border: 1px solid rgba(255,255,255,0.6); padding: 10px; border-radius: 12px; text-align: center; font-weight: 700; }
+.muted { color: var(--muted); font-weight: 600; font-size: 12px; }
+
+.shop.card { padding: 16px; overflow: auto; }
+.shop h2 { margin: 0 0 10px; }
+
+.item {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+  padding: 10px; margin-bottom: 8px; border-radius: 12px; background: var(--glass); border: 1px solid rgba(255,255,255,0.6);
+}
+
+button.buy {
+  padding: 10px 12px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; background: #111; color: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+button.buy[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.footer { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.small { font-size: 12px; }
+
+.toggle {
+  appearance: none; width: 50px; height: 28px; border-radius: 999px; background: #ddd; position: relative; outline: none; cursor: pointer; transition: background 0.2s ease;
+}
+.toggle::after { content: ""; position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s ease; box-shadow: var(--shadow); }
+.toggle:checked { background: #1dd1a1; }
+.toggle:checked::after { transform: translateX(22px); }
+
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: 1fr; }
+  .shop { max-height: 46dvh; }
+}
+
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <header class="card">
+      <div class="row">
+        <span class="badge" title="Монеты">
+          💰 <span id="coins">0</span>
+        </span>
+        <span class="badge" title="Звёзды (Telegram)">
+          ⭐ <span id="stars">0</span>
+        </span>
+        <span class="badge" title="Клики в секунду">
+          ⚡ <span id="cps">0</span>/с
+        </span>
+      </div>
+      <div class="row">
+        <span class="badge">💥 x<span id="mult">1</span> за клик</span>
+        <label class="row" style="gap:6px">
+          <input id="soundToggle" class="toggle" type="checkbox">
+          <span class="muted">Звук</span>
+        </label>
+      </div>
+    </header><section class="main card">
+  <div class="clickzone">
+    <button class="star-btn" id="clickBtn" aria-label="Кликать, чтобы получить монеты">
+      <div class="star-shape"></div>
+    </button>
+  </div>
+  <div class="stats">
+    <div class="stat">Всего кликов<br><span id="totalClicks">0</span></div>
+    <div class="stat">Крит. шанс<br><span id="crit">1%</span></div>
+    <div class="stat">Оффлайн доход<br><span id="offline">0/мин</span></div>
+  </div>
+</section>
+
+<aside class="shop card">
+  <h2>🛍️ Магазин</h2>
+  <div id="shopList"></div>
+
+  <h2 style="margin-top:14px">⭐ Покупки за Stars</h2>
+  <div class="item">
+    <div>
+      <div style="font-weight:800">Радужная аура (косметика)</div>
+      <div class="muted">Меняет фон на сверх‑радужный. Требует 5⭐.</div>
+    </div>
+    <button class="buy" id="buyAura">Купить 5⭐</button>
+  </div>
+  <div class="item">
+    <div>
+      <div style="font-weight:800">Гипер‑ускоритель (x5 на 60 сек)</div>
+      <div class="muted">Оплата через Telegram Invoice, 10⭐.</div>
+    </div>
+    <button class="buy" id="buyBooster">Купить 10⭐</button>
+  </div>
+
+  <div class="footer small muted">
+    <span>Совет: добавьте игру в Telegram Mini App и включите Stars через бота‑продавца.</span>
+    <button class="buy" id="resetBtn" style="background:#b23">Сброс</button>
+  </div>
+</aside>
+
+  </div>  <audio id="clickSound">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg">
+  </audio>  <script>
+    // ==== Telegram theme + Haptics support (graceful fallback) ====
+    const tg = (typeof Telegram !== 'undefined' && Telegram.WebApp) ? Telegram.WebApp : null;
+    if (tg) {
+      tg.expand();
+      try { tg.enableClosingConfirmation(); } catch {}
+      // Apply Telegram theme to text
+      const tp = tg.themeParams || {};
+      if (tp.text_color) document.documentElement.style.setProperty('--text', tp.text_color);
+      if (tp.hint_color) document.documentElement.style.setProperty('--muted', tp.hint_color);
+      if (tp.button_color) document.documentElement.style.setProperty('--accent', tp.button_color);
+    }
+
+    // ==== Game State ====
+    const state = {
+      coins: 0,
+      stars: 0, // local counter for testing. In проде читайте баланс с бота.
+      perClick: 1,
+      cps: 0,
+      totalClicks: 0,
+      critChance: 0.01,
+      critMult: 3,
+      offlinePerMin: 0,
+      aura: false,
+      boosterUntil: 0,
+      lastActive: Date.now(),
+      sound: false,
+      shop: {
+        clickPower: { level: 0, base: 10, mult: 1.18 },
+        autoClicker: { level: 0, base: 30, mult: 1.22 },
+        critChance: { level: 0, base: 50, mult: 1.28 },
+        offline: { level: 0, base: 40, mult: 1.2 },
+      },
+    };
+
+    const el = id => document.getElementById(id);
+
+    function fmt(n){ return Math.floor(n).toLocaleString('ru-RU'); }
+
+    // ==== Persistence (LocalStorage + optional Telegram CloudStorage) ====
+    const KEY = 'star-clicker-v1';
+    function save(){
+      state.lastActive = Date.now();
+      localStorage.setItem(KEY, JSON.stringify(state));
+      if (tg && tg.CloudStorage) {
+        try { tg.CloudStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+      }
+    }
+    async function load(){
+      let raw = localStorage.getItem(KEY);
+      if (!raw && tg && tg.CloudStorage) {
+        try {
+          await new Promise(res => tg.CloudStorage.getItem(KEY, v => { raw = v; res(); }));
+        } catch {}
+      }
+      if (raw) {
+        try { Object.assign(state, JSON.parse(raw)); } catch {}
+      }
+    }
+
+    // ==== UI Update ====
+    function updateUI(){
+      el('coins').textContent = fmt(state.coins);
+      el('stars').textContent = fmt(state.stars);
+      el('cps').textContent = fmt(state.cps);
+      el('mult').textContent = getClickMult().toFixed(2).replace('.', ',');
+      el('totalClicks').textContent = fmt(state.totalClicks);
+      el('crit').textContent = Math.round(state.critChance*100) + '%';
+      el('offline').textContent = fmt(state.offlinePerMin) + '/мин';
+      renderShop();
+      document.body.style.transition = 'filter 0.3s ease';
+      document.body.style.filter = Date.now() < state.boosterUntil ? 'saturate(1.4) brightness(1.08)' : 'none';
+    }
+
+    // ==== Shop Rendering & Logic ====
+    const shopDefs = [
+      {
+        key: 'clickPower',
+        title: 'Сила клика +1',
+        desc: 'Увеличивает монеты за клик.',
+        effect: () => state.perClick = 1 + state.shop.clickPower.level,
+        cost: lvl => Math.floor(state.shop.clickPower.base * Math.pow(state.shop.clickPower.mult, lvl)),
+      },
+      {
+        key: 'autoClicker',
+        title: 'Автокликер +1/с',
+        desc: 'Каждую секунду добавляет монеты.',
+        effect: () => state.cps = state.shop.autoClicker.level,
+        cost: lvl => Math.floor(state.shop.autoClicker.base * Math.pow(state.shop.autoClicker.mult, lvl)),
+      },
+      {
+        key: 'critChance',
+        title: 'Крит. шанс +1%',
+        desc: 'Иногда клик умножается x'+state.critMult+'.',
+        effect: () => state.critChance = 0.01 * (1 + state.shop.critChance.level),
+        cost: lvl => Math.floor(state.shop.critChance.base * Math.pow(state.shop.critChance.mult, lvl)),
+      },
+      {
+        key: 'offline',
+        title: 'Оффлайн доход +3/мин',
+        desc: 'Получайте монеты, пока вас нет.',
+        effect: () => state.offlinePerMin = state.shop.offline.level * 3,
+        cost: lvl => Math.floor(state.shop.offline.base * Math.pow(state.shop.offline.mult, lvl)),
+      },
+    ];
+
+    function renderShop(){
+      const box = document.getElementById('shopList');
+      box.innerHTML = '';
+      shopDefs.forEach(def => {
+        const lvl = state.shop[def.key].level;
+        const price = def.cost(lvl+1);
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div>
+            <div style="font-weight:800">${def.title} (ур. ${lvl})</div>
+            <div class="muted">${def.desc}</div>
+          </div>
+          <button class="buy" ${state.coins < price ? 'disabled' : ''} data-key="${def.key}" data-price="${price}">Купить ${price}💰</button>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('button.buy[data-key]');
+      if (!btn) return;
+      const key = btn.getAttribute('data-key');
+      const price = +btn.getAttribute('data-price');
+      if (state.coins < price) return;
+      state.coins -= price;
+      state.shop[key].level++;
+      shopDefs.find(d=>d.key===key).effect();
+      save();
+      pulse(btn);
+      updateUI();
+    });
+
+    // ==== Clicking ====
+    const clickBtn = el('clickBtn');
+    const snd = el('clickSound');
+    el('soundToggle').addEventListener('change', (e)=>{ state.sound = e.target.checked; save(); });
+
+    function getClickMult(){
+      let mult = state.perClick;
+      if (Date.now() < state.boosterUntil) mult *= 5;
+      return mult;
+    }
+
+    function addFloatingText(x, y, text){
+      const span = document.createElement('span');
+      span.className = 'floating';
+      span.textContent = text;
+      span.style.left = x + 'px';
+      span.style.top = y + 'px';
+      span.style.fontSize = '20px';
+      document.body.appendChild(span);
+      const dy = 90;
+      const duration = 850;
+      const start = performance.now();
+      const step = t => {
+        const k = Math.min(1, (t-start)/duration);
+        span.style.transform = `translate(-50%, ${-k*dy}px)`;
+        span.style.opacity = (1-k).toFixed(2);
+        if (k<1) requestAnimationFrame(step); else span.remove();
+      };
+      requestAnimationFrame(step);
+    }
+
+    function haptic(type='impact'){ try { tg?.HapticFeedback?.impactOccurred(type); } catch {} }
+    function pulse(node){ node.animate([{transform:'scale(1)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:220, easing:'ease-out'}); }
+
+    clickBtn.addEventListener('click', (ev)=>{
+      const rect = clickBtn.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+
+      let gain = getClickMult();
+      const isCrit = Math.random() < state.critChance;
+      if (isCrit) gain *= state.critMult;
+
+      state.coins += gain;
+      state.totalClicks++;
+      if (state.sound) { snd.currentTime = 0; snd.play().catch(()=>{}); }
+      addFloatingText(ev.clientX || cx, ev.clientY || cy, (isCrit?'💥 ':'+') + fmt(gain));
+      pulse(clickBtn);
+      haptic(isCrit ? 'rigid' : 'light');
+      save();
+      updateUI();
+    });
+
+    // ==== Passive income (CPS) ====
+    setInterval(()=>{
+      state.coins += state.cps;
+      updateUI();
+    }, 1000);
+
+    // ==== Offline income ====
+    function applyOfflineIncome(){
+      const now = Date.now();
+      const minutes = Math.max(0, Math.floor((now - state.lastActive) / 60000));
+      if (minutes>0 && state.offlinePerMin>0){
+        const gained = minutes * state.offlinePerMin;
+        state.coins += gained;
+        addFloatingText(window.innerWidth-80, 80, '⏳+'+fmt(gained));
+      }
+    }
+
+    // ==== Stars purchases ====
+    const auraBtn = el('buyAura');
+    const boostBtn = el('buyBooster');
+
+    function requireStars(cost){
+      if (state.stars >= cost) { state.stars -= cost; return true; }
+      // If in Telegram, try to open an invoice (bot should create one for Stars)
+      if (tg && tg.openInvoice) {
+        // Your bot must generate invoiceUrl for Stars. Put your URL or slug below.
+        const invoiceUrl = 'https://t.me/your_bot?start=stars_invoice_demo';
+        tg.openInvoice(invoiceUrl, (status) => {
+          // status: 'paid', 'cancelled', 'failed', 'pending'
+          if (status === 'paid') {
+            // In проде: запросите у бота новый баланс Stars.
+            // Для демо: начислим временно.
+            state.stars += cost; // симулируем зачисление, чтобы покупка прошла
+            updateUI();
+          }
+        });
+      } else {
+        alert('Недостаточно ⭐. В Telegram Mini App покупка откроет инвойс бота. Сейчас добавим 20⭐ для теста.');
+        state.stars += 20; // тестовый пополняш
+      }
+      return state.stars >= cost ? (state.stars -= cost, true) : false;
+    }
+
+    auraBtn.addEventListener('click', ()=>{
+      if (!requireStars(5)) return;
+      state.aura = true;
+      document.querySelector('.bg').style.animationDuration = '12s';
+      document.querySelector('.bg').style.filter = 'saturate(1.6) brightness(1.08)';
+      save(); updateUI(); haptic('soft');
+    });
+
+    boostBtn.addEventListener('click', ()=>{
+      if (!requireStars(10)) return;
+      const now = Date.now();
+      state.boosterUntil = Math.max(state.boosterUntil, now) + 60000; // +60s
+      save(); updateUI(); haptic('medium');
+    });
+
+    // ==== Reset ====
+    el('resetBtn').addEventListener('click', ()=>{
+      if (!confirm('Сбросить прогресс?')) return;
+      localStorage.removeItem(KEY);
+      location.reload();
+    });
+
+    // ==== Boot ====
+    (async function init(){
+      await load();
+      // Recompute derived stats after load
+      shopDefs.forEach(d=>d.effect());
+      applyOfflineIncome();
+      updateUI();
+
+      // If Telegram MainButton exists, wire it as bonus action
+      if (tg && tg.MainButton) {
+        tg.MainButton.setText('Получить ежедневный бонус');
+        tg.MainButton.show();
+        tg.onEvent('mainButtonClicked', ()=>{
+          const bonus = 100 + Math.floor(Math.random()*200);
+          state.coins += bonus;
+          addFloatingText(80,70,'🎁+'+fmt(bonus));
+          save(); updateUI(); haptic('soft');
+        });
+      }
+
+      // Persist every 5s
+      setInterval(save, 5000);
+      window.addEventListener('beforeunload', save);
+    })();
+  </script></body>
+</html>
